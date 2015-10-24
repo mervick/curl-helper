@@ -1,0 +1,19 @@
+{
+    "name": "mervick/curl-helper",
+    "description": "PHP Curl Helper",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Andrey Izman",
+            "email": "izman.dev@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0"
+    },
+    "autoload": {
+        "psr-0": {
+            "CurlHelper": ""
+        }
+    }
+}
