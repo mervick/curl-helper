@@ -9,6 +9,7 @@ class CurlHelper
      * @var string
      */
     public $user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.76 Safari/537.36';
+
     /**
      * @var int
      */
@@ -18,39 +19,46 @@ class CurlHelper
      * @var resource
      */
     protected $ch;
+
     /**
      * @var null|string
      */
     protected $url;
+
     /**
      * @var array
      */
     protected $get_data = [];
+
     /**
      * @var array
      */
     protected $post_data = [];
+
     /**
      * @var null|string
      */
     protected $post_raw;
+
     /**
      * @var array
      */
     protected $cookies = [];
+
     /**
      * @var array
      */
     protected $headers = [];
+
     /**
      * @var array
      */
     protected $files = [];
 
 
-    const CT_FORM_DATA      = 'multipart/form-data';
-    const CT_JSON           = 'application/json';
-    const CT_FORM_ENCODED   = 'application/x-www-form-urlencoded';
+    const MIME_X_WWW_FORM   = 'application/x-www-form-urlencoded';
+    const MIME_FORM_DATA    = 'multipart/form-data';
+    const MIME_JSON         = 'application/json';
 
 
     /**
@@ -60,24 +68,6 @@ class CurlHelper
     {
         $this->ch = curl_init();
         $this->url = $url;
-    }
-
-    /**
-     * @return $this
-     */
-    protected function prepare()
-    {
-        $components = parse_url($this->url);
-        parse_str($components['query'], $str);
-        $components['query'] = http_build_query(array_merge($str, $this->get_data));
-        $this->url = http_build_url($components);
-
-        curl_setopt($this->ch, CURLOPT_URL, $this->url);
-        curl_setopt($this->ch, CURLOPT_USERAGENT, $this->user_agent);
-        curl_setopt($this->ch, CURLOPT_TIMEOUT, $this->timeout);
-        curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1);
-
-        return $this;
     }
 
     /**
@@ -156,34 +146,130 @@ class CurlHelper
      */
     function setGetData($data)
     {
-
+        $this->get_data = array_merge($this->get_data, $data);
+        return $this;
     }
 
+    /**
+     * @param array $data
+     * @return $this
+     */
     function setHeaders($data)
     {
         $this->headers = array_merge($this->headers, $data);
-
         return $this;
     }
 
+    /**
+     * @param array $data
+     * @return $this
+     */
     function setCookies($data)
     {
         $this->cookies = array_merge($this->cookies, $data);
-
         return $this;
     }
 
-    function postFile($filename, $field)
+    /**
+     * @param string $fieldname
+     * @param string $filename
+     * @param string|null $basename
+     * @param string|null $mime_type
+     * @return $this
+     */
+    function putFile($fieldname, $filename, $basename=null, $mime_type=null)
     {
-        $eol = PHP_EOL;
-        $BOUNDARY = '----' . md5(time());
+        $this->files[] = [
+            'type' => 'file',
+            'fieldname' => $fieldname,
+            'file' => $filename,
+            'basename' => $basename,
+            'mime_type' => $mime_type,
+        ];
+        return $this;
+    }
 
-        $this->setHeaders([
-            'Content-Type' => 'multipart/form-data; boundary='.$BOUNDARY,
-            'X-Requested-With' => 'XMLHttpRequest',
-        ]);
+    /**
+     * @param string $fieldname
+     * @param string $file_contents
+     * @param string $basename
+     * @param string $mime_type
+     * @return $this
+     */
+    function putFileRaw($fieldname, $file_contents, $basename, $mime_type)
+    {
+        $this->files[] = [
+            'type' => 'raw',
+            'fieldname' => $fieldname,
+            'file' => $file_contents,
+            'basename' => $basename,
+            'mime_type' => $mime_type,
+        ];
+        return $this;
+    }
 
-        curl_setopt($this->ch, CURLOPT_HEADER, 1);
+    /**
+     * @return string
+     */
+    protected function createUrl()
+    {
+        $url_data = parse_url($this->url);
+        parse_str($url_data['query'], $get_data);
+        $url_data['query'] = http_build_query(array_merge($get_data, $this->get_data));
+        return http_build_url($url_data);
+    }
+
+    /**
+     * Execute
+     * @return array
+     */
+    public function exec()
+    {
+        if (isset($this->post_raw)) {
+            curl_setopt($this->ch, CURLOPT_POST, 1);
+            curl_setopt($this->ch, CURLOPT_POSTFIELDS, $this->post_raw);
+            $this->headers['Content-Length'] = strlen($this->post_raw);
+            if (empty($this->headers['Content-Type'])) {
+                $this->headers['Content-Type'] = 'text/plain';
+            }
+        }
+        elseif (!empty($this->post_data) || !empty($this->files)) {
+            curl_setopt($this->ch, CURLOPT_POST, 1);
+
+            if (!empty($this->files)) {
+                $this->headers['Content-Type'] = self::MIME_FORM_DATA;
+            }
+            elseif (empty($this->headers['Content-Type'])) {
+                $this->headers['Content-Type'] = self::MIME_X_WWW_FORM;
+            }
+
+            if ($this->headers['Content-Type'] === self::MIME_JSON) {
+                $data = json_encode($this->post_data);
+            }
+            elseif ($this->headers['Content-Type'] === self::MIME_FORM_DATA) {
+                $data = $this->createBoundary();
+            }
+            else {
+                $data = http_build_query($this->post_data);
+            }
+
+            curl_setopt($this->ch, CURLOPT_POSTFIELDS, $data);
+            $this->headers['Content-Length'] = strlen($data);
+        }
+
+        if (!empty($this->headers)) {
+            $data = [];
+            foreach ($this->headers as $k => $v) {
+                if (is_array($v)) {
+                    foreach ($v as $val) {
+                        $data[] = "$k: $val";
+                    }
+                } else {
+                    $data[] = "$k: $v";
+                }
+            }
+            curl_setopt($this->ch, CURLOPT_HTTPHEADER, $data);
+        }
 
         if (!empty($this->cookies)) {
             $data = [];
@@ -193,40 +279,56 @@ class CurlHelper
             curl_setopt($this->ch, CURLOPT_COOKIE, implode('; ', $data));
         }
 
-        foreach ($this->post_data as $name => $data) {
-            $BODY[] = "--$BOUNDARY$eol";
-            $BODY[] = "Content-Disposition: form-data; name=\"$name\"$eol$eol";
-            $BODY[] = "$data$eol";
-        }
-
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $type = finfo_file($finfo, $filename);
-        finfo_close($finfo);
-        $basename = basename($filename);
-
-        $BODY[] = "--$BOUNDARY$eol";
-        $BODY[] = "Content-Disposition: form-data; name=\"$field\"; filename=\"$basename\"$eol";
-        $BODY[] = "Content-Type: $type$eol$eol";
-
-        $BODY[] = file_get_contents($filename) . $eol;
-        $BODY[] = "--$BOUNDARY--$eol$eol";
-
-        $BODY = implode('', $BODY);
-
-        $this->setHeaders(['Content-Length' => strlen($BODY)]);
-
-        if (!empty($this->headers)) {
-            $data = [];
-            foreach ($this->headers as $k => $v) {
-                $data[] = "$k: $v";
-            }
-            curl_setopt($this->ch, CURLOPT_HTTPHEADER, $data);
-        }
-
-        curl_setopt($this->ch, CURLOPT_POST, 1);
-        curl_setopt($this->ch, CURLOPT_POSTFIELDS, $BODY);
+        curl_setopt($this->ch, CURLOPT_URL, $this->createUrl());
+        curl_setopt($this->ch, CURLOPT_USERAGENT, $this->user_agent);
+        curl_setopt($this->ch, CURLOPT_TIMEOUT, $this->timeout);
+        curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($this->ch, CURLOPT_HEADER, 1);
 
         return $this->getResponse();
+    }
+
+    /**
+     * @return string
+     */
+    protected function createBoundary()
+    {
+        $eol = "\n";
+        $boundary = '----CurlHelperBoundary' . md5(microtime());
+
+        $this->headers['Content-Type'] = self::MIME_FORM_DATA . "; boundary=$boundary";
+        $this->headers['X-Requested-With'] = 'XMLHttpRequest';
+
+        $data = [];
+        foreach ($this->post_data as $field => $value) {
+            $data[] = "--$boundary$eol";
+            $data[] = "Content-Disposition: form-data; name=\"$field\"$eol$eol";
+            $data[] = "$value$eol";
+        }
+
+        foreach ($this->files as $file) {
+            if ($file['type'] === 'file') {
+                if (empty($file['basename'])) {
+                    $file['basename'] = basename($file['file']);
+                }
+                if (empty($file['mime_type'])) {
+                    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                    $file['mime_type'] = finfo_file($finfo, $file['file']);
+                    finfo_close($finfo);
+                }
+            }
+            if (empty($file['mime_type'])) {
+                $file['mime_type'] = 'application/octet-stream';
+            }
+            $data[] = "--$boundary$eol";
+            $data[] = "Content-Disposition: form-data; name=\"{$file['fieldname']}\"; filename=\"{$file['basename']}\"$eol";
+            $data[] = "Content-Type: {$file['mime_type']}$eol$eol";
+            $data[] = ($file['type'] === 'file' ? file_get_contents($file['file']) : $file['file']) . $eol;
+        }
+
+        $data[] = "--$boundary--$eol$eol";
+
+        return implode('', $data);
     }
 
     /**
@@ -286,43 +388,4 @@ class CurlHelper
         ];
     }
 
-    function exec()
-    {
-        curl_setopt($this->ch, CURLOPT_HEADER, 1);
-
-        if (!empty($this->cookies)) {
-            $data = [];
-            foreach ($this->cookies as $k => $v) {
-                $data[] = "$k=$v";
-            }
-            curl_setopt($this->ch, CURLOPT_COOKIE, implode('; ', $data));
-        }
-        if (!empty($this->post_data)) {
-            curl_setopt($this->ch, CURLOPT_POST, 1);
-            if ($this->isJson) {
-                $data = json_encode($this->post_data);
-            } else {
-                $data = http_build_query($this->post_data);
-            }
-            curl_setopt($this->ch, CURLOPT_POSTFIELDS, $data);
-            $this->setHeaders(['Content-Length' => strlen($data)]);
-        }
-        if (!empty($this->headers)) {
-            $data = [];
-            foreach ($this->headers as $k => $v) {
-                $data[] = "$k: $v";
-            }
-            curl_setopt($this->ch, CURLOPT_HTTPHEADER, $data);
-        }
-
-        $this->response = curl_exec($this->ch);
-        $header_size = curl_getinfo($this->ch, CURLINFO_HEADER_SIZE);
-        $this->headers = substr($this->response, 0, $header_size);
-        $this->content = substr($this->response, $header_size);
-        $this->cookies = $this->getCookies();
-        $this->status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
-        curl_close($this->ch);
-
-        return $this;
-    }
 }
