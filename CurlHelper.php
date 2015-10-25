@@ -365,7 +365,7 @@ class CurlHelper
         if (isset($headers['Set-Cookie'])) {
             foreach (is_array($headers['Set-Cookie']) ? $headers['Set-Cookie'] : [$headers['Set-Cookie']] as $cookie)
             {
-                $cookie = explode('=', explode(';', $cookie, 2)[0]);
+                $cookie = explode('=', explode(';', $cookie, 2)[0], 2);
                 if (isset($cookie[1])) {
                     $cookies[$cookie[0]] = $cookie[1];
                 }
