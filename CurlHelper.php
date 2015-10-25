@@ -114,7 +114,7 @@ class CurlHelper
      * @param bool $debug [optional]
      * @return $this
      */
-    function debug($debug=true)
+    public function debug($debug=true)
     {
         curl_setopt($this->ch, CURLOPT_VERBOSE, $debug);
         return $this;
@@ -124,7 +124,7 @@ class CurlHelper
      * @param string $raw
      * @return $this
      */
-    function setPostRaw($raw)
+    public function setPostRaw($raw)
     {
         $this->post_raw = $raw;
         return $this;
@@ -134,7 +134,7 @@ class CurlHelper
      * @param array $data
      * @return $this
      */
-    function setPostData($data)
+    public function setPostData($data)
     {
         $this->post_data = array_merge($this->post_data, $data);
         return $this;
@@ -144,7 +144,7 @@ class CurlHelper
      * @param array $data
      * @return $this
      */
-    function setGetData($data)
+    public function setGetData($data)
     {
         $this->get_data = array_merge($this->get_data, $data);
         return $this;
@@ -154,7 +154,7 @@ class CurlHelper
      * @param array $data
      * @return $this
      */
-    function setHeaders($data)
+    public function setHeaders($data)
     {
         $this->headers = array_merge($this->headers, $data);
         return $this;
@@ -164,7 +164,7 @@ class CurlHelper
      * @param array $data
      * @return $this
      */
-    function setCookies($data)
+    public function setCookies($data)
     {
         $this->cookies = array_merge($this->cookies, $data);
         return $this;
@@ -177,7 +177,7 @@ class CurlHelper
      * @param string|null $mime_type
      * @return $this
      */
-    function putFile($fieldname, $filename, $basename=null, $mime_type=null)
+    public function putFile($fieldname, $filename, $basename=null, $mime_type=null)
     {
         $this->files[] = [
             'type' => 'file',
@@ -196,7 +196,7 @@ class CurlHelper
      * @param string $mime_type
      * @return $this
      */
-    function putFileRaw($fieldname, $file_contents, $basename, $mime_type)
+    public function putFileRaw($fieldname, $file_contents, $basename, $mime_type)
     {
         $this->files[] = [
             'type' => 'raw',
