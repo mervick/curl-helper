@@ -43,8 +43,9 @@ $response = (new \CurlHelper($url))
 
 // POST request with headers
 $response = (new \CurlHelper($url))
-    ->setHeaders(['Content-Type' => CurlHelper::MIME_X_WWW_FORM]) // "application/x-www-form-urlencoded"
-                                                                  // this one is default for POST, so you can skip it
+    // Content-Type: application/x-www-form-urlencoded
+    // this one is default for POST, so you can skip it
+    ->setHeaders(['Content-Type' => CurlHelper::MIME_X_WWW_FORM])
     ->setHeaders([
         'Some-Header1' => 'SomeValue1',
         'Some-Header2' => 'SomeValue2',
@@ -60,7 +61,8 @@ $response = (new \CurlHelper($url))
 
 // JSON POST request
 $response = (new \CurlHelper($url))
-    ->setHeaders(['Content-Type' => CurlHelper::MIME_JSON]) // application/json
+    // Content-Type: application/json
+    ->setHeaders(['Content-Type' => CurlHelper::MIME_JSON])
     ->setPostData(['somePostField' => 'somePostVal'])
     ->exec();
 
@@ -71,8 +73,9 @@ $response = (new \CurlHelper($url))
 
 // Send file
 $response = (new \CurlHelper($url))
-    ->setHeaders(['Content-Type' => CurlHelper::MIME_FORM_DATA]) // "multipart/form-data"
-                                                                 // this is default for sending files, so you can skip it
+    // Content-Type: multipart/form-data
+    // this is default for sending files, so you can skip it
+    ->setHeaders(['Content-Type' => CurlHelper::MIME_FORM_DATA])
     ->putFile('fieldName', '/path/to/file')
     ->exec();
 
