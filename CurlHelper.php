@@ -122,7 +122,10 @@ class CurlHelper
      */
     public function debug($debug=true)
     {
-        curl_setopt($this->ch, CURLOPT_VERBOSE, $debug);
+        curl_setopt($this->ch, CURLOPT_VERBOSE, $debug && true);
+        if (is_string($debug)) {
+            curl_setopt($this->ch, CURLOPT_STDERR, $debug);
+        }
         return $this;
     }
 
