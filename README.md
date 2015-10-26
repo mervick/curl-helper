@@ -33,7 +33,7 @@ var_dump($response);
 
 // Add and/or modify some GET params 
 $response = (new \CurlHelper($url))
-    ->setGetData(['get2' => 'val2'])
+    ->setGetParams(['get2' => 'val2'])
     ->exec();
 
 // Follow location
@@ -60,7 +60,7 @@ $response = (new \CurlHelper($url))
         'Some-Header1' => 'SomeValue1',
         'Some-Header2' => 'SomeValue2',
     ])
-    ->setPostData([
+    ->setPostFields([
         'somePostField' => 'somePostVal',
         'somePostArray' => [ // POST array
             'item1',
@@ -73,7 +73,7 @@ $response = (new \CurlHelper($url))
 $response = (new \CurlHelper($url))
     // Content-Type: application/json
     ->setHeaders(['Content-Type' => CurlHelper::MIME_JSON])
-    ->setPostData(['somePostField' => 'somePostVal'])
+    ->setPostFields(['somePostField' => 'somePostVal'])
     ->exec();
 
 // Set cookies
@@ -102,10 +102,29 @@ $response = (new\CurlHelper($url))
     ->putFileRaw('fieldName', $file_contents, 'some.name', 'mime-type')
     ->exec();
     
-// Send POST contents raw 
+// Send POST contents raw
 $response = (new\CurlHelper($url))
     ->setPostRaw($postRawContents)
     ->exec();
+    
+// Save and read cookies from/to the file
+$response = (new\CurlHelper($url))
+    ->setCookieFile('/path/to/file')
+    ->exec();
+    
+// Use proxy
+$response = (new\CurlHelper($url))
+    ->useProxy('192.168.1.1:8080', 'login', 'password')
+    ->exec();
+    
+// Set custom CURL options
+$response = (new\CurlHelper($url))
+    ->setOptions([
+        CURLOPT_CONNECTTIMEOUT => 60,
+        CURLOPT_PROXYTYPE => CURLPROXY_SOCKS5,
+    ])
+    ->exec();
+
 ```
 
 ## License

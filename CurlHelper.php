@@ -143,7 +143,7 @@ class CurlHelper
      * @param array $data
      * @return $this
      */
-    public function setPostData($data)
+    public function setPostParams($data)
     {
         $this->post_data = array_merge($this->post_data, $data);
         return $this;
@@ -152,11 +152,31 @@ class CurlHelper
     /**
      * @param array $data
      * @return $this
+     * @see CurlHelper::setPostParams() :similar:
      */
-    public function setGetData($data)
+    public function setPostFields($data)
+    {
+        return $this->setPostParams($data);
+    }
+
+    /**
+     * @param array $data
+     * @return $this
+     */
+    public function setGetParams($data)
     {
         $this->get_data = array_merge($this->get_data, $data);
         return $this;
+    }
+
+    /**
+     * @param array $data
+     * @return $this
+     * @see CurlHelper::setGetParams() :similar:
+     */
+    public function setGetFields($data)
+    {
+        return $this->setGetParams($data);
     }
 
     /**
@@ -260,6 +280,46 @@ class CurlHelper
             $parsed_string .= '#' . $url['fragment'];
         }
         return $parsed_string;
+    }
+
+    /**
+     * @param $filename
+     * @return $this
+     */
+    public function setCookieFile($filename)
+    {
+        curl_setopt($this->ch, CURLOPT_COOKIEJAR, $filename);
+        curl_setopt($this->ch, CURLOPT_COOKIEFILE, $filename);
+        return $this;
+    }
+
+    /**
+     * @param string $host
+     * @param string|null $login [optional]
+     * @param string|null $password [optional]
+     * @return $this
+     */
+    public function useProxy($host, $login=null, $password=null)
+    {
+        curl_setopt($this->ch, CURLOPT_HTTPPROXYTUNNEL, true);
+        curl_setopt($this->ch, CURLOPT_PROXY, $host);
+        if (isset($login)) {
+            curl_setopt($this->ch, CURLOPT_PROXYUSERPWD, "$login:$password");
+        }
+        return $this;
+    }
+
+    /**
+     * Set custom CURL options
+     * @param array $options
+     * @return $this
+     */
+    public function setOptions($options)
+    {
+        foreach ($options as $key => $value) {
+            curl_setopt($this->ch, $key, $value);
+        }
+        return $this;
     }
 
     /**
