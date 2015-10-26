@@ -8,7 +8,7 @@ Require PHP >= 5.4
 ## Installation
 Install via `composer`:
 ```bash
-composer require mervick\curl-helper
+composer require mervick/curl-helper
 ```
 or download `CurlHelper.php` and include it in yours php files.
 
