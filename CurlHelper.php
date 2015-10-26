@@ -70,7 +70,7 @@ class CurlHelper
     /**
      * @param string $url [optional]
      */
-    function __construct($url=null)
+    public function __construct($url=null)
     {
         $this->ch = curl_init();
         $this->url = $url;
@@ -217,7 +217,7 @@ class CurlHelper
     /**
      * @return string
      */
-    protected function createUrl()
+    protected function generateUrl()
     {
         $url_data = parse_url($this->url);
         parse_str($url_data['query'], $get_data);
@@ -253,7 +253,7 @@ class CurlHelper
                 $data = json_encode($this->post_data);
             }
             elseif ($this->headers['Content-Type'] === self::MIME_FORM_DATA) {
-                $data = $this->createBoundary();
+                $data = $this->generateBoundary();
             }
             else {
                 $data = http_build_query($this->post_data);
@@ -285,31 +285,40 @@ class CurlHelper
             curl_setopt($this->ch, CURLOPT_COOKIE, implode('; ', $data));
         }
 
-        curl_setopt($this->ch, CURLOPT_URL, $this->createUrl());
+        curl_setopt($this->ch, CURLOPT_URL, $this->generateUrl());
         curl_setopt($this->ch, CURLOPT_USERAGENT, $this->user_agent);
         curl_setopt($this->ch, CURLOPT_TIMEOUT, $this->timeout);
         curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($this->ch, CURLOPT_HEADER, 1);
 
-        return $this->getResponse();
+        return $this->generateResponse();
     }
 
     /**
      * @return string
      */
-    protected function createBoundary()
+    protected function generateBoundary()
     {
-        $eol = "\n";
+        $eol = PHP_EOL;
         $boundary = '----CurlHelperBoundary' . md5(microtime());
 
         $this->headers['Content-Type'] = self::MIME_FORM_DATA . "; boundary=$boundary";
         $this->headers['X-Requested-With'] = 'XMLHttpRequest';
 
         $data = [];
+        $each = function ($field, $value) use (&$data, &$each, $boundary, $eol) {
+            if (is_array($value)) {
+                foreach ($value as $item) {
+                    $each($field, $item);
+                }
+            } else {
+                $data[] = "--$boundary$eol";
+                $data[] = "Content-Disposition: form-data; name=\"$field\"$eol$eol";
+                $data[] = "$value$eol";
+            }
+        };
         foreach ($this->post_data as $field => $value) {
-            $data[] = "--$boundary$eol";
-            $data[] = "Content-Disposition: form-data; name=\"$field\"$eol$eol";
-            $data[] = "$value$eol";
+            $each($field, $value);
         }
 
         foreach ($this->files as $file) {
@@ -340,7 +349,7 @@ class CurlHelper
     /**
      * @return array
      */
-    protected function getResponse()
+    protected function generateResponse()
     {
         $response = curl_exec($this->ch);
         $header_size = curl_getinfo($this->ch, CURLINFO_HEADER_SIZE);
