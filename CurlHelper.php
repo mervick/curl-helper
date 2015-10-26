@@ -308,8 +308,9 @@ class CurlHelper
         $data = [];
         $each = function ($field, $value) use (&$data, &$each, $boundary, $eol) {
             if (is_array($value)) {
-                foreach ($value as $item) {
-                    $each($field, $item);
+                foreach ($value as $key => $item) {
+                    if (is_int($key)) $key = '';
+                    $each("{$field}[{$key}]", $item);
                 }
             } else {
                 $data[] = "--$boundary$eol";
