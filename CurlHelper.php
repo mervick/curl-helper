@@ -165,7 +165,9 @@ class CurlHelper
      */
     public function setHeaders($data)
     {
-        $this->headers = array_merge($this->headers, $data);
+        foreach ($data as $key => $val) {
+            $this->headers[self::fixStringCase($key)] = $val;
+        }
         return $this;
     }
 
@@ -222,10 +224,42 @@ class CurlHelper
      */
     protected function generateUrl()
     {
-        $url_data = parse_url($this->url);
-        parse_str($url_data['query'], $get_data);
-        $url_data['query'] = http_build_query(array_merge($get_data, $this->get_data));
-        return http_build_url($url_data);
+        $parsed_string = '';
+        $url = parse_url($this->url);
+        if (!empty($url['query'])) {
+            parse_str($url['query'], $get_data);
+            $url['query'] = http_build_query(array_merge($get_data, $this->get_data));
+        } else {
+            $url['query'] = http_build_query($this->get_data);
+        }
+        if (isset($url['scheme'])) {
+            $parsed_string .= $url['scheme'] . '://';
+        }
+        if (isset($url['user'])) {
+            $parsed_string .= $url['user'];
+            if (isset($url['pass'])) {
+                $parsed_string .= ':' . $url['pass'];
+            }
+            $parsed_string .= '@';
+        }
+        if (isset($url['host'])) {
+            $parsed_string .= $url['host'];
+        }
+        if (isset($url['port'])) {
+            $parsed_string .= ':' . $url['port'];
+        }
+        if (!empty($url['path'])) {
+            $parsed_string .= $url['path'];
+        } else {
+            $parsed_string .= '/';
+        }
+        if (!empty($url['query'])) {
+            $parsed_string .= '?' . $url['query'];
+        }
+        if (isset($url['fragment'])) {
+            $parsed_string .= '#' . $url['fragment'];
+        }
+        return $parsed_string;
     }
 
     /**
@@ -306,7 +340,6 @@ class CurlHelper
         $boundary = '----CurlHelperBoundary' . md5(microtime());
 
         $this->headers['Content-Type'] = self::MIME_FORM_DATA . "; boundary=$boundary";
-        $this->headers['X-Requested-With'] = 'XMLHttpRequest';
 
         $data = [];
         $each = function ($field, $value) use (&$data, &$each, $boundary, $eol) {
@@ -372,6 +405,7 @@ class CurlHelper
             $line = explode(':', $line, 2);
             if (isset($line[1])) {
                 list($key, $value) = $line;
+                $key = self::fixStringCase($key);
                 $value = ($value = trim($value)) && !empty($value) ? $value : null;
                 if (isset($headers[$key]) && $headers[$key] != $value) {
                     if (!is_array($headers[$key])) {
@@ -396,7 +430,7 @@ class CurlHelper
         }
 
         $type = isset($headers['Content-Type']) ? is_array($headers['Content-Type']) ?
-            $headers['Content-Type'][0] : $headers['Content-Type'] : 'text/plain';
+            $headers['Content-Type'][0] : $headers['Content-Type'] : null;
 
         $json_data = !empty($content) && in_array($content{0}, ['{', '[']) ? json_decode($content, true) : false;
 
@@ -411,4 +445,16 @@ class CurlHelper
         ];
     }
 
+    /**
+     * @param string $str
+     * @return string
+     */
+    protected static function fixStringCase($str)
+    {
+        $str = explode('-', $str);
+        foreach ($str as &$word) {
+            $word = ucfirst($word);
+        }
+        return implode('-', $str);
+    }
 }
