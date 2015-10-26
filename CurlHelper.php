@@ -1,4 +1,10 @@
 <?php
+/**
+ * CurlHelper.php
+ * @author Andrey Izman <izmanw@gmail.com>
+ * @link https://github.com/mervick/curl-helper
+ * @license MIT
+ */
 
 /**
  * Class CurlHelper
