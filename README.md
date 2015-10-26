@@ -19,9 +19,9 @@ $url = 'http://example.com/path/script?get1=val1';
 
 // Simple GET request
 $response = (new \CurlHelper($url))->exec();
+
 var_dump($response);
 // Will be output array with few keys:
-//
 // $response['status']      - http code, example "200' on success
 // $response['type']        - `Content-Type` from headers, example "application/json; charset=utf-8"
 // $response['headers']     - assoc array with all parsed headers
@@ -29,6 +29,7 @@ var_dump($response);
 // $response['headers_raw'] - headers raw
 // $response['content']     - content
 // $response['data']        - assoc array of json decoded content or false
+
 
 // Add and/or modify some GET params 
 $response = (new \CurlHelper($url))
