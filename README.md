@@ -98,27 +98,27 @@ $response = (new \CurlHelper($url))
 
 // Send raw file
 $file_contents = file_get_contents('/file/to/path');
-$response = (new\CurlHelper($url))
+$response = (new \CurlHelper($url))
     ->putFileRaw('fieldName', $file_contents, 'some.name', 'mime-type')
     ->exec();
     
 // Send POST contents raw
-$response = (new\CurlHelper($url))
+$response = (new \CurlHelper($url))
     ->setPostRaw($postRawContents)
     ->exec();
     
 // Save and read cookies from/to the file
-$response = (new\CurlHelper($url))
+$response = (new \CurlHelper($url))
     ->setCookieFile('/path/to/file')
     ->exec();
     
 // Use proxy
-$response = (new\CurlHelper($url))
+$response = (new \CurlHelper($url))
     ->useProxy('192.168.1.1:8080', 'login', 'password')
     ->exec();
     
 // Set custom CURL options
-$response = (new\CurlHelper($url))
+$response = (new \CurlHelper($url))
     ->setOptions([
         CURLOPT_CONNECTTIMEOUT => 60,
         CURLOPT_PROXYTYPE => CURLPROXY_SOCKS5,
