@@ -117,7 +117,7 @@ class CurlHelper
     }
 
     /**
-     * @param bool $debug [optional]
+     * @param bool|string $debug [optional]
      * @return $this
      */
     public function debug($debug=true)
