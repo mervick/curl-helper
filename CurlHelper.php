@@ -68,6 +68,15 @@ class CurlHelper
 
 
     /**
+     * @param string|null $url [optional]
+     * @return CurlHelper
+     */
+    public static function factory($url=null)
+    {
+        return new self($url);
+    }
+
+    /**
      * @param string $url [optional]
      */
     public function __construct($url=null)
@@ -491,9 +500,13 @@ class CurlHelper
 
         $type = isset($headers['Content-Type']) ? is_array($headers['Content-Type']) ?
             $headers['Content-Type'][0] : $headers['Content-Type'] : null;
+        $encoding = isset($headers['Content-Encoding']) ? is_array($headers['Content-Encoding']) ?
+            $headers['Content-Encoding'][0] : $headers['Content-Encoding'] : null;
 
+        $content = strtolower($encoding) === 'gzip' ? gzdecode($content) : $content;
         $json_data = !empty($content) && in_array($content{0}, ['{', '[']) ? json_decode($content, true) : false;
 
+        ksort($headers);
         return [
             'status' => $status,
             'type' => $type,
