@@ -18,7 +18,7 @@ or download `CurlHelper.php` and include it in yours php files.
 $url = 'http://example.com/path/script?get1=val1';
 
 // Simple GET request
-$response = (new \CurlHelper($url))->exec();
+$response = CurlHelper::factory($url)->exec();
 
 var_dump($response);
 // Will be output array with few keys:
@@ -32,27 +32,27 @@ var_dump($response);
 
 
 // Add and/or modify some GET params 
-$response = (new \CurlHelper($url))
+$response = CurlHelper::factory($url)
     ->setGetParams(['get2' => 'val2'])
     ->exec();
 
 // Follow location
-$response = (new \CurlHelper($url))
+$response = CurlHelper::factory($url)
     ->follow(true)
     ->exec();
 
 // Writes verbose information to STDERR
-$response = (new \CurlHelper($url))
+$response = CurlHelper::factory($url)
     ->debug(true)
     ->exec();
 
 // Writes verbose information to the file
-$response = (new \CurlHelper($url))
+$response = CurlHelper::factory($url)
     ->debug('/path/to/file')
     ->exec();
 
 // POST request with headers
-$response = (new \CurlHelper($url))
+$response = CurlHelper::factory($url)
     // Content-Type: application/x-www-form-urlencoded
     // this one is default for POST, so you can skip it
     ->setHeaders(['Content-Type' => CurlHelper::MIME_X_WWW_FORM])
@@ -70,19 +70,19 @@ $response = (new \CurlHelper($url))
     ->exec();
 
 // JSON POST request
-$response = (new \CurlHelper($url))
+$response = CurlHelper::factory($url)
     // Content-Type: application/json
     ->setHeaders(['Content-Type' => CurlHelper::MIME_JSON])
     ->setPostFields(['somePostField' => 'somePostVal'])
     ->exec();
 
 // Set cookies
-$response = (new \CurlHelper($url))
+$response = CurlHelper::factory($url)
     ->setCookies(['someField' => 'someVal'])
     ->exec();
 
 // Send file
-$response = (new \CurlHelper($url))
+$response = CurlHelper::factory($url)
     // Content-Type: multipart/form-data
     // this is default for sending files, so you can skip it
     ->setHeaders(['Content-Type' => CurlHelper::MIME_FORM_DATA])
@@ -90,7 +90,7 @@ $response = (new \CurlHelper($url))
     ->exec();
 
 // Send multiple files 
-$response = (new \CurlHelper($url))
+$response = CurlHelper::factory($url)
     ->putFile('fieldName', '/path/to/file1')
     ->putFile('fieldNameArr[]', '/path/to/file2')
     ->putFile('fieldNameArr[]', '/path/to/file3')
@@ -98,27 +98,27 @@ $response = (new \CurlHelper($url))
 
 // Send raw file
 $file_contents = file_get_contents('/file/to/path');
-$response = (new \CurlHelper($url))
+$response = CurlHelper::factory($url)
     ->putFileRaw('fieldName', $file_contents, 'some.name', 'mime-type')
     ->exec();
     
 // Send POST contents raw
-$response = (new \CurlHelper($url))
+$response = CurlHelper::factory($url)
     ->setPostRaw($postRawContents)
     ->exec();
     
 // Save and read cookies from/to the file
-$response = (new \CurlHelper($url))
+$response = CurlHelper::factory($url)
     ->setCookieFile('/path/to/file')
     ->exec();
     
 // Use proxy
-$response = (new \CurlHelper($url))
+$response = CurlHelper::factory($url)
     ->useProxy('192.168.1.1:8080', 'login', 'password')
     ->exec();
     
 // Set custom CURL options
-$response = (new \CurlHelper($url))
+$response = CurlHelper::factory($url)
     ->setOptions([
         CURLOPT_CONNECTTIMEOUT => 60,
         CURLOPT_PROXYTYPE => CURLPROXY_SOCKS5,
