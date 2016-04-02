@@ -59,6 +59,11 @@ class CurlHelper
     /**
      * @var array
      */
+    protected $xpath = [];
+
+    /**
+     * @var array
+     */
     protected $files = [];
 
 
@@ -332,6 +337,15 @@ class CurlHelper
     }
 
     /**
+     * @param string|string[] $expr
+     * @return $this
+     */
+    public function xpath($expr)
+    {
+        $this->xpath = $expr;
+        return $this;
+    }
+    /**
      * Execute
      * @return array
      */
@@ -515,7 +529,39 @@ class CurlHelper
             'headers_raw' => $header,
             'content' => $content,
             'data' => $json_data,
+            'xpath' => $this->parseXpath($content),
         ];
+    }
+
+    /**
+     * @param string $content
+     * @return array|null
+     */
+    protected function parseXpath($content)
+    {
+        if (!empty($this->xpath) && !empty($content)) {
+            $doc = new DOMDocument();
+            $doc->loadHTML($content);
+            $result = [];
+            if (is_array($this->xpath)) {
+                foreach ($this->xpath as $id => $query) {
+                    $result[$id] = [];
+                    $xpath = new DOMXpath($doc);
+                    $nodes = $xpath->query($query);
+                    foreach ($nodes as $node) {
+                        $result[$id][] = $node->nodeValue;
+                    }
+                }
+            } else {
+                $xpath = new DOMXpath($doc);
+                $nodes = $xpath->query($this->xpath);
+                foreach ($nodes as $node) {
+                    $result[] = $node->nodeValue;
+                }
+            }
+            return $result;
+        }
+        return null;
     }
 
     /**
