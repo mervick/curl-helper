@@ -29,6 +29,7 @@ var_dump($response);
 // $response['headers_raw'] - headers raw
 // $response['content']     - content
 // $response['data']        - assoc array of json decoded content or false
+// $response['xpath']       - array with parsed xpath values or null
 
 
 // Add and/or modify some GET params 
@@ -39,6 +40,14 @@ $response = CurlHelper::factory($url)
 // Follow location
 $response = CurlHelper::factory($url)
     ->follow(true)
+    ->exec();
+
+// Xpath
+$response = CurlHelper::factory($url)
+    ->xpath([
+        'title' => '//title',
+        'token' => '*/meta[@name="csrf-token"]/@content'
+    ])
     ->exec();
 
 // Writes verbose information to STDERR
