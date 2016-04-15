@@ -540,24 +540,61 @@ class CurlHelper
     protected function parseXpath($content)
     {
         if (!empty($this->xpath) && !empty($content)) {
-            $doc = new DOMDocument();
+            $aliases = [
+//                '/\/trim\(\)/' => '[1]/translate(normalize-space(text()), " ", "")',
+                '/\/trim\(\)$/' => '',
+                '/@([a-z]+)~=(["\'])([a-z0-9A-Z\x20\-_]+)\2/' => 'contains(concat(\2 \2, @\1, \2 \2), \2 \3 \2)',
+            ];
+            $replace_aliases = function($query) use ($aliases) {
+                foreach ($aliases as $regexp => $replace) {
+                    $query = preg_replace($regexp, $replace, $query);
+                }
+                return $query;
+            };
+            $getNodeValue = function($doc, $query) use ($replace_aliases){
+                $result = [];
+                $xpath = new \DOMXpath($doc);
+                $trim = preg_match('/\/trim\(\)$/', $query);
+                $query = $replace_aliases($query);
+                $nodes = $xpath->query($query);
+                foreach ($nodes as $node) {
+                    $result[] = $trim ? trim($node->nodeValue) : $node->nodeValue;
+                }
+                return $result;
+            };
+            $doc = new \DOMDocument();
             $doc->loadHTML($content);
             $result = [];
             if (is_array($this->xpath)) {
                 foreach ($this->xpath as $id => $query) {
-                    $result[$id] = [];
-                    $xpath = new DOMXpath($doc);
-                    $nodes = $xpath->query($query);
-                    foreach ($nodes as $node) {
-                        $result[$id][] = $node->nodeValue;
+                    if (is_array($query)) {
+                        $res = [];
+                        foreach ($query as $root => $sub) {
+                            if (is_array($sub)) {
+                                $r = $x = [];
+                                $max = 0;
+                                foreach ($sub as $j => $q) {
+                                    $r[$j] = $getNodeValue($doc, "$root$q");
+                                    $max = max($max, count($r[$j]));
+                                }
+                                for ($i = 0; $i < $max; $i ++) {
+                                    $x[$i] = [];
+                                    foreach ($sub as $j => $q) {
+                                        $x[$i][$j] = isset($r[$j][$i]) ? $r[$j][$i] : null;
+                                    }
+                                }
+                                $res[] = $x;
+                            } else {
+                                $res[] = $getNodeValue($doc, "$root$sub");
+                            }
+                        }
+                        $result[$id] = count($res) === 1 ? $res[0] : $res;
+                    } else {
+                        $result[$id] = $getNodeValue($doc, $query);
                     }
                 }
             } else {
-                $xpath = new DOMXpath($doc);
-                $nodes = $xpath->query($this->xpath);
-                foreach ($nodes as $node) {
-                    $result[] = $node->nodeValue;
-                }
+                $result = $getNodeValue($doc, $this->xpath);
             }
             return $result;
         }
