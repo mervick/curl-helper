@@ -91,6 +91,55 @@ class CurlHelper
     }
 
     /**
+     * Set config
+     * @param $config
+     * @return $this
+     */
+    public function config($config)
+    {
+        $alias = [
+            'url' => 'setUrl',
+            'userAgent' => 'setUserAgent',
+            'user-agent' => 'setUserAgent',
+            'timeout' => 'setTimeout',
+            'postRaw' => 'setPostRaw',
+            'post-raw' => 'setPostRaw',
+            'postParams' => 'setPostParams',
+            'postFields' => 'setPostParams',
+            'post-params' => 'setPostParams',
+            'post-fields' => 'setPostParams',
+            'post' => 'setPostParams',
+            'getParams' => 'setGetParams',
+            'getFields' => 'setGetParams',
+            'get-params' => 'setGetParams',
+            'get-fields' => 'setGetParams',
+            'get' => 'setGetParams',
+            'headers' => 'setHeaders',
+            'cookies' => 'setCookies',
+            'cookieFile' => 'setCookieFile',
+            'cookie-file' => 'setCookieFile',
+            'proxy' => 'useProxy',
+            'options' => 'setOptions',
+            'file' => 'putFile',
+            'fileRaw' => 'putFileRaw',
+            'file-raw' => 'putFileRaw',
+        ];
+        $config = array_intersect_key($config, array_fill_keys(array_merge(array_keys($alias), array_values($alias), [
+            'follow', 'xpath',
+        ]), 1));
+        foreach ($config as $method => $value) {
+            if (isset($alias[$method])) {
+                $method = $alias[$method];
+            }
+            if (!(in_array($method, ['useProxy', 'putFile', 'putFileRaw']) && is_array($value))) {
+                $value = [$value];
+            }
+            call_user_func_array([$this, $method], $value);
+        }
+        return $this;
+    }
+
+    /**
      * @param string $url
      * @return $this
      */
@@ -540,8 +589,9 @@ class CurlHelper
     protected function parseXpath($content)
     {
         if (!empty($this->xpath) && !empty($content)) {
+            libxml_use_internal_errors(true);
             $aliases = [
-//                '/\/trim\(\)/' => '[1]/translate(normalize-space(text()), " ", "")',
+                '/\/html\(\)$/' => '',
                 '/\/trim\(\)$/' => '',
                 '/@([a-z]+)~=(["\'])([a-z0-9A-Z\x20\-_]+)\2/' => 'contains(concat(\2 \2, @\1, \2 \2), \2 \3 \2)',
             ];
@@ -552,13 +602,15 @@ class CurlHelper
                 return $query;
             };
             $getNodeValue = function($doc, $query) use ($replace_aliases){
+                /** @var \DOMDocument $doc */
                 $result = [];
                 $xpath = new \DOMXpath($doc);
-                $trim = preg_match('/\/trim\(\)$/', $query);
+                $is_trim = preg_match('/\/trim\(\)$/', $query);
+                $is_html = preg_match('/\/html\(\)$/', $query);
                 $query = $replace_aliases($query);
                 $nodes = $xpath->query($query);
                 foreach ($nodes as $node) {
-                    $result[] = $trim ? trim($node->nodeValue) : $node->nodeValue;
+                    $result[] = !$is_trim ? $is_html ? $doc->saveHTML($node) : $node->nodeValue : trim($node->nodeValue);
                 }
                 return $result;
             };
@@ -596,9 +648,10 @@ class CurlHelper
             } else {
                 $result = $getNodeValue($doc, $this->xpath);
             }
+            libxml_use_internal_errors(false);
             return $result;
         }
-        return null;
+        return is_array($this->xpath) ? array_fill_keys(array_keys($this->xpath), []) : [];
     }
 
     /**
