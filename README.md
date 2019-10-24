@@ -18,7 +18,7 @@ or download `CurlHelper.php` and include it in yours php files.
 $url = 'http://example.com/path/script?get1=val1';
 
 // Simple GET request
-$response = CurlHelper::factory($url)->exec();
+$response = Mervick\CurlHelper::factory($url)->exec();
 
 var_dump($response);
 // Will be output array with few keys:
@@ -33,17 +33,17 @@ var_dump($response);
 
 
 // Add and/or modify some GET params 
-$response = CurlHelper::factory($url)
+$response = Mervick\CurlHelper::factory($url)
     ->setGetParams(['get2' => 'val2'])
     ->exec();
 
 // Follow location
-$response = CurlHelper::factory($url)
+$response = Mervick\CurlHelper::factory($url)
     ->follow(true)
     ->exec();
 
 // Xpath
-$response = CurlHelper::factory($url)
+$response = Mervick\CurlHelper::factory($url)
     ->xpath([
         'title' => '//title',
         'token' => '*/meta[@name="csrf-token"]/@content'
@@ -51,20 +51,20 @@ $response = CurlHelper::factory($url)
     ->exec();
 
 // Writes verbose information to STDERR
-$response = CurlHelper::factory($url)
+$response = Mervick\CurlHelper::factory($url)
     ->debug(true)
     ->exec();
 
 // Writes verbose information to the file
-$response = CurlHelper::factory($url)
+$response = Mervick\CurlHelper::factory($url)
     ->debug('/path/to/file')
     ->exec();
 
 // POST request with headers
-$response = CurlHelper::factory($url)
+$response = Mervick\CurlHelper::factory($url)
     // Content-Type: application/x-www-form-urlencoded
     // this one is default for POST, so you can skip it
-    ->setHeaders(['Content-Type' => CurlHelper::MIME_X_WWW_FORM])
+    ->setHeaders(['Content-Type' => Mervick\CurlHelper::MIME_X_WWW_FORM])
     ->setHeaders([
         'Some-Header1' => 'SomeValue1',
         'Some-Header2' => 'SomeValue2',
@@ -79,27 +79,27 @@ $response = CurlHelper::factory($url)
     ->exec();
 
 // JSON POST request
-$response = CurlHelper::factory($url)
+$response = Mervick\CurlHelper::factory($url)
     // Content-Type: application/json
-    ->setHeaders(['Content-Type' => CurlHelper::MIME_JSON])
+    ->setHeaders(['Content-Type' => Mervick\CurlHelper::MIME_JSON])
     ->setPostFields(['somePostField' => 'somePostVal'])
     ->exec();
 
 // Set cookies
-$response = CurlHelper::factory($url)
+$response = Mervick\CurlHelper::factory($url)
     ->setCookies(['someField' => 'someVal'])
     ->exec();
 
 // Send file
-$response = CurlHelper::factory($url)
+$response = Mervick\CurlHelper::factory($url)
     // Content-Type: multipart/form-data
     // this is default for sending files, so you can skip it
-    ->setHeaders(['Content-Type' => CurlHelper::MIME_FORM_DATA])
+    ->setHeaders(['Content-Type' => Mervick\CurlHelper::MIME_FORM_DATA])
     ->putFile('fieldName', '/path/to/file')
     ->exec();
 
 // Send multiple files 
-$response = CurlHelper::factory($url)
+$response = Mervick\CurlHelper::factory($url)
     ->putFile('fieldName', '/path/to/file1')
     ->putFile('fieldNameArr[]', '/path/to/file2')
     ->putFile('fieldNameArr[]', '/path/to/file3')
@@ -107,27 +107,27 @@ $response = CurlHelper::factory($url)
 
 // Send raw file
 $file_contents = file_get_contents('/file/to/path');
-$response = CurlHelper::factory($url)
+$response = Mervick\CurlHelper::factory($url)
     ->putFileRaw('fieldName', $file_contents, 'some.name', 'mime-type')
     ->exec();
     
 // Send POST contents raw
-$response = CurlHelper::factory($url)
+$response = Mervick\CurlHelper::factory($url)
     ->setPostRaw($postRawContents)
     ->exec();
     
 // Save and read cookies from/to the file
-$response = CurlHelper::factory($url)
+$response = Mervick\CurlHelper::factory($url)
     ->setCookieFile('/path/to/file')
     ->exec();
     
 // Use proxy
-$response = CurlHelper::factory($url)
+$response = Mervick\CurlHelper::factory($url)
     ->useProxy('192.168.1.1:8080', 'login', 'password')
     ->exec();
     
 // Set custom CURL options
-$response = CurlHelper::factory($url)
+$response = Mervick\CurlHelper::factory($url)
     ->setOptions([
         CURLOPT_CONNECTTIMEOUT => 60,
         CURLOPT_PROXYTYPE => CURLPROXY_SOCKS5,
