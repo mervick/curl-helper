@@ -6,6 +6,8 @@
  * @license MIT
  */
 
+namespace Mervick;
+
 /**
  * Class CurlHelper
  */
