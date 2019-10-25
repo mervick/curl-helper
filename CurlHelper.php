@@ -16,7 +16,7 @@ class CurlHelper
     /**
      * @var string
      */
-    public $user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.76 Safari/537.36';
+    public $user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36';
 
     /**
      * @var int
@@ -458,13 +458,14 @@ class CurlHelper
             curl_setopt($this->ch, CURLOPT_COOKIE, implode('; ', $data));
         }
 
-        curl_setopt($this->ch, CURLOPT_URL, $this->generateUrl());
+        $url = $this->generateUrl();
+        curl_setopt($this->ch, CURLOPT_URL, $url);
         curl_setopt($this->ch, CURLOPT_USERAGENT, $this->user_agent);
         curl_setopt($this->ch, CURLOPT_TIMEOUT, $this->timeout);
         curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($this->ch, CURLOPT_HEADER, 1);
 
-        return $this->generateResponse();
+        return $this->generateResponse($url);
     }
 
     /**
@@ -524,12 +525,14 @@ class CurlHelper
     }
 
     /**
+     * @param string $url
      * @return array
      */
-    protected function generateResponse()
+    protected function generateResponse($url)
     {
         $response = curl_exec($this->ch);
         $header_size = curl_getinfo($this->ch, CURLINFO_HEADER_SIZE);
+        $sent = curl_getinfo($this->ch, CURLINFO_HEADER_OUT);
         $status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
         $header = substr($response, 0, $header_size);
         $content = substr($response, $header_size);
@@ -574,16 +577,26 @@ class CurlHelper
         $json_data = !empty($content) && in_array($content{0}, ['{', '[']) ? json_decode($content, true) : false;
 
         ksort($headers);
-        return [
+        $data = [
             'status' => $status,
+            'url' => $url,
             'type' => $type,
             'headers' => $headers,
             'cookies' => $cookies,
             'headers_raw' => $header,
             'content' => $content,
             'data' => $json_data,
-            'xpath' => $this->parseXpath($content),
         ];
+
+        if (!empty($this->xpath)) {
+            $data['xpath'] = $this->parseXpath($content);
+        }
+        
+        if (!empty($sent)) {
+            $data['request'] = $sent;
+        }
+        
+        return $data;
     }
 
     /**
