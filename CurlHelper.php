@@ -344,6 +344,7 @@ class CurlHelper
         if (isset($url['fragment'])) {
             $parsed_string .= '#' . $url['fragment'];
         }
+
         return $parsed_string;
     }
 
@@ -396,6 +397,7 @@ class CurlHelper
         $this->xpath = $expr;
         return $this;
     }
+
     /**
      * Execute
      * @return array
@@ -593,32 +595,73 @@ class CurlHelper
         if (!empty($this->xpath) && !empty($content)) {
             libxml_use_internal_errors(true);
             $aliases = [
+                '/\/node\(\)$/' => '',
+                '/\/name\(\)$/' => '',
                 '/\/html\(\)$/' => '',
                 '/\/trim\(\)$/' => '',
+                '/\/\(name,value\)$/' => '',
                 '/@([a-z]+)~=(["\'])([a-z0-9A-Z\x20\-_]+)\2/' => 'contains(concat(\2 \2, @\1, \2 \2), \2 \3 \2)',
             ];
+
             $replace_aliases = function($query) use ($aliases) {
                 foreach ($aliases as $regexp => $replace) {
                     $query = preg_replace($regexp, $replace, $query);
                 }
                 return $query;
             };
+
             $getNodeValue = function($doc, $query) use ($replace_aliases){
                 /** @var \DOMDocument $doc */
                 $result = [];
                 $xpath = new \DOMXpath($doc);
+
+                $is_node = preg_match('/\/node\(\)$/', $query);
+                $is_name = preg_match('/\/name\(\)$/', $query);
                 $is_trim = preg_match('/\/trim\(\)$/', $query);
                 $is_html = preg_match('/\/html\(\)$/', $query);
+                $is_nameVal = preg_match('/\/\(name,value\)$/', $query);
+
                 $query = $replace_aliases($query);
                 $nodes = $xpath->query($query);
-                foreach ($nodes as $node) {
-                    $result[] = !$is_trim ? $is_html ? $doc->saveHTML($node) : $node->nodeValue : trim($node->nodeValue);
+
+                if ($nodes instanceof \DOMNodeList) {
+                    foreach ($nodes as $node) {
+                        /** @var \DOMElement $node */
+                        if ($is_node) {
+                            $result[] = $node;
+                        } else {
+                            if ($is_html) {
+                                $value = $doc->saveHTML($node);
+                            }
+                            elseif ($is_name) {
+                                $value = $node->nodeName;
+                            }
+                            elseif ($is_nameVal) {
+                                $value = [
+                                    'name' => $node->nodeName,
+                                    'value' => $node->nodeValue,
+                                ];
+                            }
+                            else {
+                                $value = $node->nodeValue;
+                            }
+                            
+                            if ($is_trim) {
+                                $value = trim($value);
+                            }
+                            
+                            $result[] = $value;
+                        }
+                    }
                 }
+
                 return $result;
             };
+
             $doc = new \DOMDocument();
             $doc->loadHTML($content);
             $result = [];
+
             if (is_array($this->xpath)) {
                 foreach ($this->xpath as $id => $query) {
                     if (is_array($query)) {
