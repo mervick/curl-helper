@@ -400,9 +400,10 @@ class CurlHelper
 
     /**
      * Execute
+     * @param string $returnData [optional]
      * @return array
      */
-    public function exec()
+    public function exec($returnData = null)
     {
         if (isset($this->post_raw)) {
             curl_setopt($this->ch, CURLOPT_POST, 1);
@@ -465,10 +466,11 @@ class CurlHelper
         curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($this->ch, CURLOPT_HEADER, 1);
 
-        return $this->generateResponse($url);
+        return $this->generateResponse($url, $returnData);
     }
 
     /**
+     * Generate boundary
      * @return string
      */
     protected function generateBoundary()
@@ -525,10 +527,12 @@ class CurlHelper
     }
 
     /**
+     * Generate response
      * @param string $url
+     * @param string $returnData [optional]
      * @return array
      */
-    protected function generateResponse($url)
+    protected function generateResponse($url, $returnData = null)
     {
         $response = curl_exec($this->ch);
         $header_size = curl_getinfo($this->ch, CURLINFO_HEADER_SIZE);
@@ -537,46 +541,62 @@ class CurlHelper
         $header = substr($response, 0, $header_size);
         $content = substr($response, $header_size);
 
+        $type = $content = $json_data = null;
+
         curl_close($this->ch);
 
         $headers = [];
-        foreach (explode("\n", $header) as $line) {
-            $line = explode(':', $line, 2);
-            if (isset($line[1])) {
-                list($key, $value) = $line;
-                $key = self::fixStringCase($key);
-                $value = ($value = trim($value)) && !empty($value) ? $value : null;
-                if (isset($headers[$key]) && $headers[$key] != $value) {
-                    if (!is_array($headers[$key])) {
-                        $headers[$key] = [$headers[$key]];
-                    }
-                    $headers[$key][] = $value;
-                } else {
-                    $headers[$key] = $value;
-                }
-            }
-        }
-
         $cookies = [];
-        if (isset($headers['Set-Cookie'])) {
-            foreach (is_array($headers['Set-Cookie']) ? $headers['Set-Cookie'] : [$headers['Set-Cookie']] as $cookie)
-            {
-                $cookie = explode('=', explode(';', $cookie, 2)[0], 2);
-                if (isset($cookie[1])) {
-                    $cookies[$cookie[0]] = $cookie[1];
+
+        if (!$returnData || in_array($returnData, ['content', 'data', 'xpath', 'headers', 'cookies'])) {
+            foreach (explode("\n", $header) as $line) {
+                $line = explode(':', $line, 2);
+                if (isset($line[1])) {
+                    list($key, $value) = $line;
+                    $key = self::fixStringCase($key);
+                    $value = ($value = trim($value)) && !empty($value) ? $value : null;
+                    if (isset($headers[$key]) && $headers[$key] != $value) {
+                        if (!is_array($headers[$key])) {
+                            $headers[$key] = [$headers[$key]];
+                        }
+                        $headers[$key][] = $value;
+                    } else {
+                        $headers[$key] = $value;
+                    }
                 }
             }
         }
 
-        $type = isset($headers['Content-Type']) ? is_array($headers['Content-Type']) ?
-            $headers['Content-Type'][0] : $headers['Content-Type'] : null;
-        $encoding = isset($headers['Content-Encoding']) ? is_array($headers['Content-Encoding']) ?
-            $headers['Content-Encoding'][0] : $headers['Content-Encoding'] : null;
+        if (!$returnData || $returnData === 'cookies') {
+            if (isset($headers['Set-Cookie'])) {
+                foreach (is_array($headers['Set-Cookie']) ? $headers['Set-Cookie'] : [$headers['Set-Cookie']] as $cookie) {
+                    $cookie = explode('=', explode(';', $cookie, 2)[0], 2);
+                    if (isset($cookie[1])) {
+                        $cookies[$cookie[0]] = $cookie[1];
+                    }
+                }
+            }
+        }
 
-        $content = strtolower($encoding) === 'gzip' ? gzdecode($content) : $content;
-        $json_data = !empty($content) && in_array($content{0}, ['{', '[']) ? json_decode($content, true) : false;
+        if (!$returnData) {
+            $type = isset($headers['Content-Type']) ? is_array($headers['Content-Type']) ?
+                $headers['Content-Type'][0] : $headers['Content-Type'] : null;
+        }
 
-        ksort($headers);
+        if (!$returnData || in_array($returnData, ['content', 'data', 'xpath'])) {
+            $encoding = isset($headers['Content-Encoding']) ? is_array($headers['Content-Encoding']) ?
+                $headers['Content-Encoding'][0] : $headers['Content-Encoding'] : null;
+            $content = strtolower($encoding) === 'gzip' ? gzdecode($content) : $content;
+        }
+
+        if (!$returnData || $returnData === 'data') {
+            $json_data = !empty($content) && in_array($content{0}, ['{', '[']) ? json_decode($content, true) : false;
+        }
+
+        if (!$returnData || $returnData === 'headers') {
+            ksort($headers);
+        }
+
         $data = [
             'status' => $status,
             'url' => $url,
@@ -588,15 +608,15 @@ class CurlHelper
             'data' => $json_data,
         ];
 
-        if (!empty($this->xpath)) {
+        if (!empty($this->xpath) && (!$returnData || $returnData === 'xpath')) {
             $data['xpath'] = $this->parseXpath($content);
         }
-        
+
         if (!empty($sent)) {
             $data['request'] = $sent;
         }
-        
-        return $data;
+
+        return $returnData ? $data[$returnData] : $data;
     }
 
     /**
@@ -658,11 +678,11 @@ class CurlHelper
                             else {
                                 $value = $node->nodeValue;
                             }
-                            
+
                             if ($is_trim) {
                                 $value = trim($value);
                             }
-                            
+
                             $result[] = $value;
                         }
                     }
