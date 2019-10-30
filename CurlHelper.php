@@ -541,7 +541,7 @@ class CurlHelper
         $header = substr($response, 0, $header_size);
         $content = substr($response, $header_size);
 
-        $type = $content = $json_data = null;
+        $type = $json_data = null;
 
         curl_close($this->ch);
 
