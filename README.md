@@ -136,5 +136,17 @@ $response = Mervick\CurlHelper::factory($url)
 
 ```
 
+## Error
+If the curl process get an error it will throw a RuntimeException.
+Example:
+```php
+$url = 'htp://example.com/path/script?get1=val1';
+
+// Simple GET request
+$response = Mervick\CurlHelper::factory($url)->exec();
+
+// PHP Fatal error:  Uncaught RuntimeException: Protocol "htp" not supported or disabled in libcurl in ***/CurlHelper.php:554
+```
+
 ## License
 MIT
