@@ -16,7 +16,7 @@ class CurlHelper
     /**
      * @var string
      */
-    public $user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36';
+    public $user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36';
 
     /**
      * @var int
@@ -389,6 +389,7 @@ class CurlHelper
     }
 
     /**
+     * Set extended XPath
      * @param string|string[] $expr
      * @return $this
      */
@@ -539,18 +540,18 @@ class CurlHelper
         $header_size = curl_getinfo($this->ch, CURLINFO_HEADER_SIZE);
         $sent = curl_getinfo($this->ch, CURLINFO_HEADER_OUT);
         $status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
-        $header = substr($response, 0, $header_size);
-        $content = substr($response, $header_size);
         $error = curl_error($this->ch);
         $errno = curl_errno($this->ch);
-
-        $type = $json_data = null;
 
         curl_close($this->ch);
 
         if ($response === false) {
             throw new \RuntimeException($error, $errno);
         }
+
+        $header = substr($response, 0, $header_size);
+        $content = substr($response, $header_size);
+        $type = $json_data = null;
 
         $headers = [];
         $cookies = [];
@@ -627,6 +628,7 @@ class CurlHelper
     }
 
     /**
+     * Parse XPath contents
      * @param string $content
      * @return array|null
      */
@@ -634,14 +636,19 @@ class CurlHelper
     {
         if (!empty($this->xpath) && !empty($content)) {
             libxml_use_internal_errors(true);
-            $aliases = [
-                '/\/node\(\)$/' => '',
-                '/\/name\(\)$/' => '',
-                '/\/html\(\)$/' => '',
-                '/\/trim\(\)$/' => '',
-                '/\/\(name,value\)$/' => '',
-                '/@([a-z]+)~=(["\'])([a-z0-9A-Z\x20\-_]+)\2/' => 'contains(concat(\2 \2, @\1, \2 \2), \2 \3 \2)',
+            $func = [
+                'node' => '/\/node\(\)$/',
+                'name' => '/\/name\(\)$/',
+                'html' => '/\/html\(\)$/',
+                'trim' => '/\/trim\(\)$/',
+                'name_value' => '/\/\(name,value\)$/',
             ];
+
+            $aliases = [
+                '/@([a-zA-Z0-9\-_]+)~=(["\'])([a-zA-Z0-9\x20\-_]+)\2/' => 'contains(concat(\2 \2, @\1, \2 \2), \2 \3 \2)',
+            ];
+
+            $aliases = array_merge(array_fill_keys(array_values($func), ''), $aliases);
 
             $replace_aliases = function($query) use ($aliases) {
                 foreach ($aliases as $regexp => $replace) {
@@ -650,16 +657,16 @@ class CurlHelper
                 return $query;
             };
 
-            $getNodeValue = function($doc, $query) use ($replace_aliases){
+            $getNodeValue = function($doc, $query) use ($replace_aliases, $func){
                 /** @var \DOMDocument $doc */
                 $result = [];
                 $xpath = new \DOMXpath($doc);
 
-                $is_node = preg_match('/\/node\(\)$/', $query);
-                $is_name = preg_match('/\/name\(\)$/', $query);
-                $is_trim = preg_match('/\/trim\(\)$/', $query);
-                $is_html = preg_match('/\/html\(\)$/', $query);
-                $is_nameVal = preg_match('/\/\(name,value\)$/', $query);
+                $is_node = preg_match($func['node'], $query);
+                $is_name = preg_match($func['name'], $query);
+                $is_html = preg_match($func['html'], $query);
+                $is_trim = preg_match($func['trim'], $query);
+                $is_nameVal = preg_match($func['name_value'], $query);
 
                 $query = $replace_aliases($query);
                 $nodes = $xpath->query($query);
@@ -740,6 +747,7 @@ class CurlHelper
     }
 
     /**
+     * Fix strings to Proper-Case
      * @param string $str
      * @return string
      */
