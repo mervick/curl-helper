@@ -545,7 +545,7 @@ class CurlHelper
         $errno = curl_errno($this->ch);
 
         $type = $json_data = null;
-        
+
         curl_close($this->ch);
 
         if ($response === false) {
