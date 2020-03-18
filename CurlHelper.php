@@ -531,7 +531,7 @@ class CurlHelper
      * @param string $url
      * @param string $returnData [optional]
      * @return array
-	 * @throws \RuntimeException On error
+     * @throws \RuntimeException On error
      */
     protected function generateResponse($url, $returnData = null)
     {
@@ -541,18 +541,18 @@ class CurlHelper
         $status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
         $header = substr($response, 0, $header_size);
         $content = substr($response, $header_size);
-		$error = curl_error($this->ch);
-		$errno = curl_errno($this->ch);
+        $error = curl_error($this->ch);
+        $errno = curl_errno($this->ch);
 
         $type = $json_data = null;
 
 
-		curl_close($this->ch);
+        curl_close($this->ch);
 
 
-		if($response === false) {
-			throw new \RuntimeException($error, $errno);
-		}
+        if ($response === false) {
+            throw new \RuntimeException($error, $errno);
+        }
 
         $headers = [];
         $cookies = [];
