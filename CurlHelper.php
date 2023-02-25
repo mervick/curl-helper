@@ -593,11 +593,11 @@ class CurlHelper
         if (!$returnData || in_array($returnData, ['content', 'data', 'xpath'])) {
             $encoding = isset($headers['Content-Encoding']) ? is_array($headers['Content-Encoding']) ?
                 $headers['Content-Encoding'][0] : $headers['Content-Encoding'] : null;
-            $content = strtolower($encoding) === 'gzip' ? gzdecode($content) : $content;
+            $content =  !empty($encoding) && strtolower($encoding) === 'gzip' ? gzdecode($content) : $content;
         }
 
         if (!$returnData || $returnData === 'data') {
-            $json_data = !empty($content) && in_array($content{0}, ['{', '[']) ? json_decode($content, true) : false;
+            $json_data = !empty($content) && in_array($content[0], ['{', '[']) ? json_decode($content, true) : false;
         }
 
         if (!$returnData || $returnData === 'headers') {
